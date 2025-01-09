@@ -1,98 +1,67 @@
-import { compare } from "bcrypt";
-import { User } from "../models/UserModel.js";
 import jwt from "jsonwebtoken";
+import { User } from "../models/UserModel.js";
+import { compare } from "bcrypt";
 import { renameSync, unlinkSync } from "fs";
 
-const tokenAge = 3 * 24 * 60 * 60 * 1000;
+const maxAge = 3 * 24 * 60 * 60 * 1000;
 
 const createToken = (email, userId) => {
-  try {
-    return jwt.sign({ email, userId }, process.env.JWT_KEY, {
-      expiresIn: tokenAge / 1000, // Convert to seconds for JWT
-    });
-  } catch (error) {
-    console.error("Token creation error:", error);
-    throw new Error("Failed to create authentication token");
-  }
+  return jwt.sign({ email, userId }, process.env.JWT_KEY, {
+    expiresIn: maxAge / 1000,
+  });
 };
 
-export const signup = async (req, res) => {
+export const signup = async (request, response, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = request.body;
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Please provide an email and a password" });
+      return response.status(400).send("Email and Password is required");
     }
-
-    const user = await User.create({
-      email,
-      password,
-    });
-
-    const token = createToken(email, user._id);
-
-    res.cookie("jwt", token, {
-      httpOnly: true,
-      maxAge: tokenAge,
+    const user = await User.create({ email, password });
+    response.cookie("jwt", createToken(email, user.id), {
+      maxAge,
       secure: true,
-      sameSite: "none",
+      sameSite: "None",
     });
-
-    return res.status(201).json({
+    return response.status(201).json({
       user: {
-        id: user._id,
+        id: user.id,
         email: user.email,
-        password: user.password,
         profileSetup: user.profileSetup,
       },
     });
   } catch (error) {
-    console.error("Signup error:", error);
-    return res.status(400).json({
-      message: error.message || "Error during signup process",
-    });
+    console.log({ error });
+    return response
+      .status(500)
+      .json({ message: "An error occurred during signup." });
   }
 };
 
-export const login = async (req, res) => {
+export const login = async (request, response, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password } = request.body;
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Please provide an email and a password" });
+      return response.status(400).send("Email and Password is required");
     }
-
-    // Find user by email only
     const user = await User.findOne({ email });
-
-    // Check if user exists
-    if (!user) {
-      return res.status(400).json({ message: "Invalid email or password" });
+    if (!User) {
+      return response.status(404).send("Please Sign up first");
     }
-
-    // Compare password
     const auth = await compare(password, user.password);
     if (!auth) {
-      return res.status(400).json({ message: "Invalid email or password" });
+      return response.status(400).send("Password is incorrect");
     }
-
-    const token = createToken(email, user._id);
-
-    res.cookie("jwt", token, {
-      httpOnly: true,
-      maxAge: tokenAge,
+    response.cookie("jwt", createToken(email, user.id), {
+      maxAge,
       secure: true,
-      sameSite: "strict",
+      sameSite: "None",
     });
-
-    return res.status(200).json({
-      message: "Login successful",
+    return response.status(200).json({
       user: {
+        id: user.id,
         email: user.email,
-        id: user._id,
-        password: user.password,
+        profileSetup: user.profileSetup,
         firstName: user.firstName,
         lastName: user.lastName,
         image: user.image,
@@ -100,25 +69,22 @@ export const login = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Login error:", error);
-    return res.status(500).json({ message: "Error during login" });
+    console.log({ error });
+    return response.status(500).send("An error occurred during signup.");
   }
 };
 
-export const getUserInfo = async (req, res) => {
+export const getUserInfo = async (request, response, next) => {
   try {
-    const userData = await User.findById(req.userId);
+    console.log(request.userId);
+    const userData = await User.findById(request.userId);
     if (!userData) {
-      return res
-        .status(404)
-        .json({ message: "User with the given id not found" });
+      return response.status(404).send("User with the given id not found.");
     }
-
-    return res.status(200).json({
-      message: "User data retrieved successfully",
-      id: userData._id,
+    return response.status(200).json({
+      id: userData.id,
       email: userData.email,
-      password: userData.password,
+      profileSetup: userData.profileSetup,
       firstName: userData.firstName,
       lastName: userData.lastName,
       image: userData.image,
@@ -126,17 +92,19 @@ export const getUserInfo = async (req, res) => {
     });
   } catch (error) {
     console.log({ error });
-    return res.status(500).json({ message: "Internal Server Error" });
+    return response.status(500).send("An error occurred during signup.");
   }
 };
 
-export const updateProfile = async (req, res, next) => {
+export const updateProfile = async (request, response, next) => {
   try {
-    const { userId } = req;
-    const { firstName, lastName, color } = req.body;
+    const { userId } = request;
+    const { firstName, lastName, color } = request.body;
 
     if (!firstName || !lastName) {
-      return res.status(400).send("FirstName LastName and Color are required.");
+      return response
+        .status(400)
+        .send("FirstName LastName and Color are required.");
     }
     const userData = await User.findByIdAndUpdate(
       userId,
@@ -148,7 +116,7 @@ export const updateProfile = async (req, res, next) => {
       },
       { new: true, runValidators: true }
     );
-    return res.status(200).json({
+    return response.status(200).json({
       id: userData.id,
       email: userData.email,
       profileSetup: userData.profileSetup,
@@ -159,40 +127,40 @@ export const updateProfile = async (req, res, next) => {
     });
   } catch (error) {
     console.log({ error });
-    return res.status(500).send("An error occurred during signup.");
+    return response.status(500).send("An error occurred during signup.");
   }
 };
 
-export const addProfileImage = async (req, res, next) => {
+export const addProfileImage = async (request, response, next) => {
   try {
-    if (!req.file) {
-      return res.status(400).send("File is required");
+    if (!request.file) {
+      return response.status(400).send("File is required");
     }
 
     const date = Date.now();
-    let fileName = "uploads/profiles/" + date + req.file.originalname;
-    renameSync(req.file.path, fileName);
+    let fileName = "uploads/profiles/" + date + request.file.originalname;
+    renameSync(request.file.path, fileName);
 
     const updatedUser = await User.findByIdAndUpdate(
-      req.userId,
+      request.userId,
       { image: fileName },
       { new: true, runValidators: true }
     );
-    return res.status(200).json({
+    return response.status(200).json({
       image: updatedUser.image,
     });
   } catch (error) {
     console.log({ error });
-    return res.status(500).send("An error occurred during signup.");
+    return response.status(500).send("An error occurred during signup.");
   }
 };
 
-export const removeProfileImage = async (req, res, next) => {
+export const removeProfileImage = async (request, response, next) => {
   try {
-    const { userId } = req;
+    const { userId } = request;
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).send("User not found");
+      return response.status(404).send("User not found");
     }
     if (user.image) {
       unlinkSync(user.image);
@@ -200,19 +168,18 @@ export const removeProfileImage = async (req, res, next) => {
     user.image = null;
     await user.save();
 
-    return res.status(200).send("Profile image removed successfully");
+    return response.status(200).send("Profile image removed successfully");
   } catch (error) {
     console.log({ error });
-    return res.status(500).send("An error occurred during signup.");
+    return response.status(500).send("An error occurred during signup.");
   }
 };
-
-export const logout = async (req, res, next) => {
+export const logout = async (request, response, next) => {
   try {
-    res.cookie("jwt", "", { maxAge: 1, secure: true, sameSite: "None" });
-    return res.status(200).send("Logged Out successfully.");
+    response.cookie("jwt", "", { maxAge: 1, secure: true, sameSite: "None" });
+    return response.status(200).send("Logged Out successfully.");
   } catch (error) {
     console.log({ error });
-    return res.status(500).send("An error occurred during signup.");
+    return response.status(500).send("An error occurred during signup.");
   }
 };
