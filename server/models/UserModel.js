@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import bcrypt, { genSalt, hash } from "bcrypt";
+import { genSalt, hash } from "bcrypt";
 
 const userSchema = new mongoose.Schema({
   email: {
@@ -39,4 +39,4 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-export const User = mongoose.model("User", userSchema);
+export const User = mongoose.model("Users", userSchema);

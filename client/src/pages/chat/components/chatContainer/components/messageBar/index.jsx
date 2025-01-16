@@ -1,3 +1,5 @@
+import { useSocket } from "@/context/SocketContext.jsx";
+import { useAppStore } from "@/store";
 import EmojiPicker from "emoji-picker-react";
 import { useRef, useState, useEffect } from "react";
 import { GrAttachment } from "react-icons/gr";
@@ -6,7 +8,8 @@ import { RiEmojiStickerLine } from "react-icons/ri";
 
 const MessageBar = () => {
   const emojiRef = useRef();
-
+  const { selectedChatType, selectedChatData, userInfo } = useAppStore();
+  const socket = useSocket();
   const [message, setMessage] = useState("");
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
 
@@ -22,10 +25,40 @@ const MessageBar = () => {
     };
   }, [emojiRef]);
 
+  useEffect(() => {
+    socket?.on("messageSent", () => {
+      setMessage(""); // Clear on confirmation from server
+    });
+
+    return () => {
+      socket?.off("messageSent");
+    };
+  }, [socket]);
+
   const handleAddEmoji = (emoji) => {
     setMessage((msg) => msg + emoji.emoji);
   };
-  
+
+  const handleSendMessage = async () => {
+    if (selectedChatType === "contact" && message.trim()) {
+      socket.emit("sendMessage", {
+        sender: userInfo._id,
+        content: message,
+        recipient: selectedChatData._id,
+        messageType: "text",
+        fileUrl: undefined,
+      });
+      setMessage(""); // Clear message after sending
+    }
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+
   return (
     <div className="h-[10vh] bg-[#1c1d25] flex justify-center items-center px-8 mb-5 gap-6">
       <div className="flex-1 flex bg-[#2a2b33] rounded-md items-center gap-5 pr-5">
@@ -35,6 +68,7 @@ const MessageBar = () => {
           placeholder="Enter a message"
           value={message}
           onChange={(e) => setMessage(e.target.value)}
+          onKeyDown={handleKeyDown}
         />
         <button className="text-neutral-500 focus:border-none focus:outline-none focus:text-white duration-300 transition-all">
           <GrAttachment className="text-2xl" />

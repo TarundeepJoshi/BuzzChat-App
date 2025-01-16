@@ -20,8 +20,10 @@ export const signup = async (request, response, next) => {
     const user = await User.create({ email, password });
     response.cookie("jwt", createToken(email, user.id), {
       maxAge,
-      secure: true,
-      sameSite: "None",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      path: "/",
     });
     return response.status(201).json({
       user: {
@@ -54,8 +56,10 @@ export const login = async (request, response, next) => {
     }
     response.cookie("jwt", createToken(email, user.id), {
       maxAge,
-      secure: true,
-      sameSite: "None",
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+      path: "/",
     });
     return response.status(200).json({
       user: {
@@ -96,17 +100,12 @@ export const getUserInfo = async (request, response, next) => {
   }
 };
 
-export const updateProfile = async (request, response, next) => {
+export const updateProfile = async (request, response) => {
   try {
-    const { userId } = request;
     const { firstName, lastName, color } = request.body;
+    const userId = request.userId;
 
-    if (!firstName || !lastName) {
-      return response
-        .status(400)
-        .send("FirstName LastName and Color are required.");
-    }
-    const userData = await User.findByIdAndUpdate(
+    const updatedUser = await User.findByIdAndUpdate(
       userId,
       {
         firstName,
@@ -114,20 +113,13 @@ export const updateProfile = async (request, response, next) => {
         color,
         profileSetup: true,
       },
-      { new: true, runValidators: true }
-    );
-    return response.status(200).json({
-      id: userData.id,
-      email: userData.email,
-      profileSetup: userData.profileSetup,
-      firstName: userData.firstName,
-      lastName: userData.lastName,
-      image: userData.image,
-      color: userData.color,
-    });
+      { new: true }
+    ).select("-password");
+
+    response.status(200).json({ user: updatedUser });
   } catch (error) {
-    console.log({ error });
-    return response.status(500).send("An error occurred during signup.");
+    console.error(error);
+    response.status(500).json({ message: "Error updating profile" });
   }
 };
 
@@ -181,5 +173,28 @@ export const logout = async (request, response, next) => {
   } catch (error) {
     console.log({ error });
     return response.status(500).send("An error occurred during signup.");
+  }
+};
+
+export const checkAuth = async (request, response) => {
+  try {
+    const token = request.cookies.jwt;
+    if (!token) {
+      return response.status(401).json({ isAuthenticated: false });
+    }
+
+    const decoded = jwt.verify(token, process.env.JWT_KEY);
+    const user = await User.findById(decoded.userId).select("-password").lean();
+
+    if (!user) {
+      return response.status(401).json({ isAuthenticated: false });
+    }
+
+    return response.status(200).json({
+      isAuthenticated: true,
+      user,
+    });
+  } catch (error) {
+    return response.status(401).json({ isAuthenticated: false });
   }
 };

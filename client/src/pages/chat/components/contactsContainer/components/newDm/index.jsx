@@ -14,35 +14,38 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { animationDefaultOptions, getColor } from "@/lib/utils";
 import Lottie from "react-lottie";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
-import { animationDefaultOptions, getColor } from "@/lib/utils";
+import { useAppStore } from "@/store";
+import apiClient from "@/lib/apiClient";
+import { SEARCH_CONTACT_ROUTES } from "@/utils/constants";
 
 const NewDM = () => {
-  // const { setSelectedChatType, setSelectedChatData } = useAppStore();
+  const { setSelectedChatType, setSelectedChatData } = useAppStore();
   const [openNewContactModel, setOpenNewContactModel] = useState(false);
   const [searchedContacts, setSearchedContacts] = useState([]);
 
   const searchContacts = async (searchTerm) => {
-    // try {
-    //   if (searchTerm.length > 0) {
-    //     const response = await apiClient.post(
-    //       SEARCH_CONTACT_ROUTES,
-    //       { searchTerm },
-    //       { withCredentials: true },
-    //       console.log(searchTerm)
-    //     );
-    //     if (response.status === 200 && response.data.contacts) {
-    //       setSearchedContacts(response.data.contacts);
-    //       console.log(response.data.contacts);
-    //     }
-    //   } else {
-    //     setSearchedContacts([]);
-    //   }
-    // } catch (error) {
-    //   console.log(error);
-    // }
+    try {
+      if (searchTerm.length > 0) {
+        const response = await apiClient.post(
+          SEARCH_CONTACT_ROUTES,
+          { searchTerm },
+          { withCredentials: true },
+          // console.log(searchTerm)
+        );
+        if (response.status === 200 && response.data.contacts) {
+          setSearchedContacts(response.data.contacts);
+          // console.log(response.data.contacts);
+        }
+      } else {
+        setSearchedContacts([]);
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   const selectNewContact = (contact) => {

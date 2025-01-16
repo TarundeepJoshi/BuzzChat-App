@@ -3,12 +3,17 @@ import dotenv from "dotenv";
 import mongoose from "mongoose";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import { createServer } from "http";
 import authRoutes from "./routes/AuthRoutes.js";
+import contactsRoutes from "./routes/ContactRoutes.js";
+import messagesRoutes from "./routes/MessagesRoutes.js";
+import setupSocket from "./socket.js";
 
 dotenv.config();
 
 const app = express();
-const port = process.env.PORT || 3000;
+const server = createServer(app);
+const port = process.env.PORT || 8000;
 const databaseURL = process.env.DATABASE_URL;
 
 // Middleware
@@ -19,28 +24,24 @@ app.use(
     origin: process.env.CLIENT_URL || "http://localhost:5173",
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: "Something went wrong!" });
-});
-
 // Routes
-app.use("/upload/profile", express.static("/upload/profile"));
 app.use("/api/auth", authRoutes);
+app.use("/api/contacts", contactsRoutes);
+app.use("/api/messages", messagesRoutes);
 
-const server = app.listen(port, () => {
+// Setup Socket.io
+setupSocket(server);
+
+// Start server with HTTP server instance
+server.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
 mongoose
   .connect(databaseURL)
-  .then(() => {
-    console.log("Database connected");
-  })
-  .catch((error) => {
-    console.log("Error connecting to database", error);
-  });
+  .then(() => console.log("Database connected"))
+  .catch((error) => console.log("Database connection error:", error));

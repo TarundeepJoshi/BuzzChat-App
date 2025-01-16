@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Victory from "../../assets/victory.svg";
 import Background from "../../assets/login2.png";
 import { Tabs, TabsList } from "@/components/ui/tabs";
@@ -6,7 +6,7 @@ import { TabsContent, TabsTrigger } from "@radix-ui/react-tabs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { SIGNUP_ROUTE, LOGIN_ROUTE } from "@/utils/constants";
+import { SIGNUP_ROUTE, LOGIN_ROUTE, CHECK_AUTH_ROUTE } from "@/utils/constants";
 import apiClient from "@/lib/apiClient";
 import { useNavigate } from "react-router-dom";
 import { useAppStore } from "@/store";
@@ -14,9 +14,40 @@ import { useAppStore } from "@/store";
 function Auth() {
   const navigate = useNavigate();
   const { setUserInfo } = useAppStore();
+  const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      try {
+        const { data } = await apiClient.get(CHECK_AUTH_ROUTE);
+        if (data.isAuthenticated && data.user) {
+          setUserInfo(data.user);
+          localStorage.setItem("userInfo", JSON.stringify(data.user));
+
+          if (data.user.profileSetup) {
+            navigate("/chat");
+          } else {
+            navigate("/profile");
+          }
+        }
+      } catch (error) {
+        localStorage.removeItem("userInfo");
+        setUserInfo(undefined);
+        console.error("Auth check failed:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuthStatus();
+  }, [navigate, setUserInfo]);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
 
   const validateSignup = () => {
     if (!email.length) {
@@ -56,11 +87,16 @@ function Auth() {
         );
 
         if (response.data.user.id) {
-          setUserInfo(response.data.user);
-          if (response.data.user.profileSetup) navigate("/chat");
-          else navigate("/profile");
+          const userData = response.data.user;
+          setUserInfo(userData);
+          localStorage.setItem("userInfo", JSON.stringify(userData));
+
+          if (userData.profileSetup) {
+            navigate("/chat");
+          } else {
+            navigate("/profile");
+          }
           toast.success("Login successful");
-          console.log({ response });
         }
       } catch (error) {
         const errorMessage = error.response?.data?.message || "Login failed";
@@ -81,7 +117,7 @@ function Auth() {
         setUserInfo(response.data.user);
         toast.success("Signup successful");
         navigate("/profile");
-        console.log({ response });
+        // console.log({ response });
       } else {
         toast.error("Signup failed");
       }

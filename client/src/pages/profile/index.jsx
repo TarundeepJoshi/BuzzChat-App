@@ -27,45 +27,38 @@ const Profile = () => {
   const fileInputRef = useRef(null);
 
   useEffect(() => {
-    if (userInfo.profileSetup) {
-      setFirstName(userInfo.firstName);
-      setLastName(userInfo.lastName);
-      setSelectedColor(userInfo.color);
+    if (userInfo?.profileSetup) {
+      setFirstName(userInfo.firstName || "");
+      setLastName(userInfo.lastName || "");
+      setSelectedColor(userInfo.color || 0);
     }
     if (userInfo.image) {
       setImage(`${HOST}/${userInfo.image}`);
     }
   }, [userInfo]);
 
-  const validateProfile = () => {
-    if (!firstName) {
-      toast.error("First Name is required.");
-      return false;
+  const handleUpdateProfile = async () => {
+    try {
+      const { data } = await apiClient.post(UPDATE_PROFILE_ROUTE, {
+        firstName,
+        lastName,
+        color: selectedColor,
+      });
+      
+      if (data.user) {
+        setUserInfo(data.user);
+        localStorage.setItem('userInfo', JSON.stringify(data.user));
+        toast.success("Profile updated successfully");
+        navigate("/chat");
+      }
+    } catch (error) {
+      toast.error("Failed to update profile");
+      console.error(error);
     }
-    if (!lastName) {
-      toast.error("Last Name is required.");
-      return false;
-    }
-    return true;
   };
 
-  const saveChanges = async () => {
-    if (validateProfile()) {
-      try {
-        const response = await apiClient.post(
-          UPDATE_PROFILE_ROUTE,
-          { firstName, lastName, color: selectedColor },
-          { withCredentials: true }
-        );
-        if (response.status === 200 && response.data) {
-          setUserInfo({ ...response.data });
-          toast.success("Profile created successfully");
-          navigate("/chat");
-        }
-      } catch (error) {
-        console.log(error);
-      }
-    }
+  const handleInputChange = (setter) => (e) => {
+    setter(e.target.value);
   };
 
   const handleNavigate = () => {
@@ -88,7 +81,7 @@ const Profile = () => {
         withCredentials: true,
       });
       if (response.status === 200 && response.data.image) {
-        console.log(response.data.image);
+        // console.log(response.data.image);
         setUserInfo({ ...userInfo, image: response.data.image });
         toast.success("Image Updated Successfully");
       }
@@ -178,8 +171,8 @@ const Profile = () => {
               <Input
                 placeholder="First Name "
                 type="text"
-                onChange={(e) => setFirstName(e.target.value)}
-                value={userInfo.firstName}
+                onChange={handleInputChange(setFirstName)}
+                value={firstName}
                 className="rounded-lg p-6 bg-[#2c2e3b] border-none"
               />
             </div>
@@ -187,8 +180,8 @@ const Profile = () => {
               <Input
                 placeholder="Last Name "
                 type="text"
-                onChange={(e) => setLastName(e.target.value)}
-                value={userInfo.lastName}
+                onChange={handleInputChange(setLastName)}
+                value={lastName}
                 className="rounded-lg p-6 bg-[#2c2e3b] border-none"
               />
             </div>
@@ -211,7 +204,7 @@ const Profile = () => {
         </div>
         <Button
           className="w-full h-16 bg-purple-700 hover:bg-purple-900 transition-all duration-300"
-          onClick={saveChanges}
+          onClick={handleUpdateProfile}
         >
           Save Changes
         </Button>

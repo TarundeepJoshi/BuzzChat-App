@@ -8,9 +8,11 @@ export const UPDATE_PROFILE_ROUTE = `${AUTH_ROUTES}/updateProfile`;
 export const ADD_PROFILE_IMAGE_ROUTE = `${AUTH_ROUTES}/addProfileImage`;
 export const REMOVE_PROFILE_IMAGE_ROUTE = `${AUTH_ROUTES}/removeProfileImage`;
 export const LOGOUT_ROUTE = `${AUTH_ROUTES}/logout`;
+export const CHECK_AUTH_ROUTE = `${AUTH_ROUTES}/checkAuth`;
 
-// export const CONTACTS_ROUTES = "/api/contacts";
-// export const SEARCH_CONTACT_ROUTES = `${CONTACTS_ROUTES}/search`;
+export const CONTACTS_ROUTES = "/api/contacts";
+export const SEARCH_CONTACT_ROUTES = `${CONTACTS_ROUTES}/search`;
+export const GET_DM_CONTACTS_ROUTE = `${CONTACTS_ROUTES}/getContactsForDMList`;
 
-// export const MESSAGES_ROUTES = "api/messages";
-// export const GET_ALL_MESSAGES_ROUTE = `${MESSAGES_ROUTES}/get-messages`;
+export const MESSAGES_ROUTES = "api/messages";
+export const GET_ALL_MESSAGES_ROUTE = `${MESSAGES_ROUTES}/get-messages`;
