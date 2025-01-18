@@ -1,12 +1,13 @@
 import Message from "../models/MessagesModel.js";
+import { mkdirSync, renameSync } from "fs";
 
-export const getMessages = async (request, response, next) => {
+export const getMessages = async (req, res, next) => {
   try {
-    const user1 = request.userId;
-    const user2 = request.body.id;
+    const user1 = req.userId;
+    const user2 = req.body.id;
 
     if (!user1 || !user2) {
-      return response.status(400).send("Both user ID's are required");
+      return res.status(400).send("Both user ID's are required");
     }
 
     const messages = await Message.find({
@@ -16,9 +17,31 @@ export const getMessages = async (request, response, next) => {
       ],
     }).sort({ timestamp: 1 });
     // console.log(messages);
-    return response.status(200).json({ messages });
+    return res.status(200).json({ messages });
   } catch (error) {
     console.log({ error });
-    return response.status(500).send("Internal server error");
+    return res.status(500).send("Internal server error");
+  }
+};
+
+export const uploadFile = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).send("File is required");
+    }
+
+    const date = Date.now();
+    let fileDir = `uploads/files/${date}`;
+    let fileName = `${fileDir}/${req.file.originalname}`;
+
+    mkdirSync(fileDir, { recursive: true });
+    renameSync(req.file.path, fileName);
+
+    return res.status(200).json({
+      filePath: fileName,
+    });
+  } catch (error) {
+    console.log({ error });
+    return res.status(500).send("Internal server error");
   }
 };

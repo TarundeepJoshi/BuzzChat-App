@@ -28,6 +28,10 @@ app.use(
   })
 );
 
+// Serve static files
+app.use("/uploads/profiles", express.static("uploads/profiles"));
+app.use("/uploads/files", express.static("uploads/files"));
+
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/contacts", contactsRoutes);
