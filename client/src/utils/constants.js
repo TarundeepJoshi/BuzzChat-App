@@ -13,7 +13,13 @@ export const CHECK_AUTH_ROUTE = `${AUTH_ROUTES}/checkAuth`;
 export const CONTACTS_ROUTES = "/api/contacts";
 export const SEARCH_CONTACT_ROUTES = `${CONTACTS_ROUTES}/search`;
 export const GET_DM_CONTACTS_ROUTE = `${CONTACTS_ROUTES}/getContactsForDMList`;
+export const GET_ALL_CONTACTS_ROUTE = `${CONTACTS_ROUTES}/getAllContacts`;
 
 export const MESSAGES_ROUTES = "api/messages";
 export const GET_ALL_MESSAGES_ROUTE = `${MESSAGES_ROUTES}/get-messages`;
-export const UPLOAD_FILE_ROUTE = `${MESSAGES_ROUTES}/upload-file`; 
+export const UPLOAD_FILE_ROUTE = `${MESSAGES_ROUTES}/upload-file`;
+
+export const CHANNEL_ROUTES = "api/channels";
+export const CREATE_CHANNEL_ROUTE = `${CHANNEL_ROUTES}/createChannel`;
+export const GET_USER_CHANNELS_ROUTE = `${CHANNEL_ROUTES}/getUserChannels`;
+export const GET_CHANNEL_MESSAGES_ROUTE = `${CHANNEL_ROUTES}/getChannelMessages`;

@@ -7,6 +7,7 @@ import { createServer } from "http";
 import authRoutes from "./routes/AuthRoutes.js";
 import contactsRoutes from "./routes/ContactRoutes.js";
 import messagesRoutes from "./routes/MessagesRoutes.js";
+import channelRoutes from "./routes/ChannelRoutes.js";
 import setupSocket from "./socket.js";
 
 dotenv.config();
@@ -36,6 +37,7 @@ app.use("/uploads/files", express.static("uploads/files"));
 app.use("/api/auth", authRoutes);
 app.use("/api/contacts", contactsRoutes);
 app.use("/api/messages", messagesRoutes);
+app.use("/api/channels", channelRoutes);
 
 // Setup Socket.io
 setupSocket(server);
